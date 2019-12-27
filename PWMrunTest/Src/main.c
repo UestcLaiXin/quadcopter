@@ -174,7 +174,7 @@ int main(void)
 		TIM3->CCR1 = pwm_value;
 		TIM4->CCR1 = pwm_value;
 		TIM5->CCR1 = pwm_value;
-		if(count == 25){
+		if(count == 26){
 			printf("duty:%d\n",pwm_value);
 			count = 0;
 			printf("temperature:%f\n",temperature);
