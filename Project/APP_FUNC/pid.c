@@ -71,7 +71,6 @@ void PID_Init(void)
 *******************************************************************************/
 float PID_Calc(float shellErr, float coreStatus, PID_t* shell, PID_t* core)
 {
-    //TODO:0是否可以当空指针
     float shellKd, coreKi, coreKd;
 
     //ROLL,PITCH--串级PID
