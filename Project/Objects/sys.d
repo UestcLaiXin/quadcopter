@@ -1,0 +1,17 @@
+.\objects\sys.o: APP_FUNC\sys.c
+.\objects\sys.o: APP_FUNC\sys.h
+.\objects\sys.o: .\BSP_SYS\stm32f4xx.h
+.\objects\sys.o: .\BSP_SYS\core_cm4.h
+.\objects\sys.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
+.\objects\sys.o: .\BSP_SYS\core_cmInstr.h
+.\objects\sys.o: .\BSP_SYS\core_cmFunc.h
+.\objects\sys.o: .\BSP_SYS\core_cm4_simd.h
+.\objects\sys.o: .\BSP_SYS\system_stm32f4xx.h
+.\objects\sys.o: .\BSP_SYS\stm32f4xx_conf.h
+.\objects\sys.o: .\APP\RTE_Components.h
+.\objects\sys.o: .\DRIVER\stm32f4xx_gpio.h
+.\objects\sys.o: .\BSP_SYS\stm32f4xx.h
+.\objects\sys.o: .\DRIVER\stm32f4xx_rcc.h
+.\objects\sys.o: .\DRIVER\stm32f4xx_tim.h
+.\objects\sys.o: .\DRIVER\stm32f4xx_usart.h
+.\objects\sys.o: .\DRIVER\misc.h

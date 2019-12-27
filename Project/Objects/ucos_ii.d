@@ -1,0 +1,15 @@
+.\objects\ucos_ii.o: UCOS_SOURCE\ucos_ii.c
+.\objects\ucos_ii.o: .\UCOS_SOURCE\ucos_ii.h
+.\objects\ucos_ii.o: .\APP\app_cfg.h
+.\objects\ucos_ii.o: .\APP\os_cfg.h
+.\objects\ucos_ii.o: .\UCOS_PORT\os_cpu.h
+.\objects\ucos_ii.o: .\UCOS_SOURCE\os_core.c
+.\objects\ucos_ii.o: .\UCOS_SOURCE\os_flag.c
+.\objects\ucos_ii.o: .\UCOS_SOURCE\os_mbox.c
+.\objects\ucos_ii.o: .\UCOS_SOURCE\os_mem.c
+.\objects\ucos_ii.o: .\UCOS_SOURCE\os_mutex.c
+.\objects\ucos_ii.o: .\UCOS_SOURCE\os_q.c
+.\objects\ucos_ii.o: .\UCOS_SOURCE\os_sem.c
+.\objects\ucos_ii.o: .\UCOS_SOURCE\os_task.c
+.\objects\ucos_ii.o: .\UCOS_SOURCE\os_time.c
+.\objects\ucos_ii.o: .\UCOS_SOURCE\os_tmr.c
