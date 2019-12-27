@@ -1,7 +1,4 @@
 # Quadcopter
-
-README [English](README_EN.md) | [中文](README.md)
-
 ## 项目介绍
 本项目是电子科技大学信息与软件工程学院综合课程设计课题：基于STM32F4的四轴飞行器。主要内容包括：
 
