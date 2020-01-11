@@ -48,6 +48,9 @@ IDE：`Keil v5`
 │       ├── pcb.PcbDoc  //PCB文件
 │       ├── PCB_Project.PrjPcb  //AD工程文件
 │       └── pcb.SchDoc  //原理图文件
+│
+├──PWMrunTest HAL驱动层编写
+│
 └── Project
     ├── APP  //用户定义
     │   ├── app_cfg.h  //选择编译宏开关、APP_FUNC自定义库开关
