@@ -63,7 +63,7 @@ static void Task_COM(void* p_arg);
 static void Task_Angel(void* p_arg);
 static void Task_Height(void* p_arg);
 static void Task_PID(void* p_arg);
-//IIC互斥锁
+//IIC互斥锁用来互斥访问IIC
 OS_EVENT* IICMutex;
 /*******************************************************************************************************/
 
