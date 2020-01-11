@@ -21,8 +21,8 @@ float pitchCoreKp = 2.6f;
 float pitchCoreTi = 0.5f;
 float pitchCoreTd = 0.08f;
 
-float yawCoreKp = 1.0f;
-float yawCoreTd = 0.0f;
+float yawCoreKp = 2.6f;
+float yawCoreTd = 0.08f;
 
 float thrShellKp = 1.0f;
 float thrShellTd = 0.0f;
@@ -71,6 +71,7 @@ void PID_Init(void)
 *******************************************************************************/
 float PID_Calc(float shellErr, float coreStatus, PID_t* shell, PID_t* core)
 {
+    //TODO:0是否可以当空指针
     float shellKd, coreKi, coreKd;
 
     //ROLL,PITCH--串级PID
@@ -87,7 +88,7 @@ float PID_Calc(float shellErr, float coreStatus, PID_t* shell, PID_t* core)
         //TODO:内环积分浮点数比大小出问题
         //内环积分限幅
         if (core->eSum > CORE_INT_MAX) {
-            if (core->eK < 0.0f)
+            if (core->eK < -0.0f)
                 core->eSum += core->eK;
         } else if (core->eSum < -CORE_INT_MAX) {
             if (core->eK > 0.0f)
@@ -181,31 +182,45 @@ void Motor_Calc(void)
     //TODO:yaw 与pitch、roll的pid计算不一样
     //pidYaw = PID_Calc(0,  fGyro.z * RAD_TO_ANGLE, 0, &yawCore);
 
-    //飞行模式判断
-    Judge_FlyMode(expMode);
-
-    if (flyMode == HOVER) {
-        pidThr = PID_Calc(expHeight - height, 0, &thrShell, 0);
-    } else if (flyMode == UP) {
-        pidThr = PID_Calc((expMode - 1650) * 0.1f, 0, &thrShell, 0);
-    } else if (flyMode == DOWN) {
-        pidThr = PID_Calc((expMode - 1350) * 0.1f, 0, &thrShell, 0);
-    }
-
     //PWM限幅
-    //TODO:1500是否是起飞临界值
-    motor1 = Limit(1500 + pidThr - pidPitch + pidRoll - pidYaw, PWM_OUT_MIN, PWM_OUT_MAX);
-    motor2 = Limit(1500 + pidThr - pidPitch - pidRoll + pidYaw, PWM_OUT_MIN, PWM_OUT_MAX);
-    motor3 = Limit(1500 + pidThr + pidPitch + pidRoll + pidYaw, PWM_OUT_MIN, PWM_OUT_MAX);
-    motor4 = Limit(1500 + pidThr + pidPitch - pidRoll - pidYaw, PWM_OUT_MIN, PWM_OUT_MAX);
+    motor1 = Limit(expMode - pidPitch + pidRoll - pidYaw, PWM_OUT_MIN, PWM_OUT_MAX);
+    motor2 = Limit(expMode - pidPitch - pidRoll + pidYaw, PWM_OUT_MIN, PWM_OUT_MAX);
+    motor3 = Limit(expMode + pidPitch + pidRoll + pidYaw, PWM_OUT_MIN, PWM_OUT_MAX);
+    motor4 = Limit(expMode + pidPitch - pidRoll - pidYaw, PWM_OUT_MIN, PWM_OUT_MAX);
 
     //如果机体处于停止模式或倾斜角大于65度，则停止飞行
-    if (flyMode == STOP || angle.pitch >= 65 || angle.pitch <= -65 || angle.roll >= 65 || angle.roll <= -65) {
+    if (expMode <= 1050 || angle.pitch >= 65 || angle.pitch <= -65 || angle.roll >= 65 || angle.roll <= -65) {
         motor1 = PWM_OUT_MIN;
         motor2 = PWM_OUT_MIN;
         motor3 = PWM_OUT_MIN;
         motor4 = PWM_OUT_MIN;
     }
+
+    // //飞行模式判断
+    // Judge_FlyMode(expMode);
+
+    // if (flyMode == HOVER) {
+    //     pidThr = PID_Calc(expHeight - height, 0, &thrShell, 0);
+    // } else if (flyMode == UP) {
+    //     pidThr = PID_Calc((expMode - 1650) * 0.1f, 0, &thrShell, 0);
+    // } else if (flyMode == DOWN) {
+    //     pidThr = PID_Calc((expMode - 1350) * 0.1f, 0, &thrShell, 0);
+    // }
+
+    // //PWM限幅
+    // //TODO:1500是否是起飞临界值
+    // motor1 = Limit(1500 + pidThr - pidPitch + pidRoll - pidYaw, PWM_OUT_MIN, PWM_OUT_MAX);
+    // motor2 = Limit(1500 + pidThr - pidPitch - pidRoll + pidYaw, PWM_OUT_MIN, PWM_OUT_MAX);
+    // motor3 = Limit(1500 + pidThr + pidPitch + pidRoll + pidYaw, PWM_OUT_MIN, PWM_OUT_MAX);
+    // motor4 = Limit(1500 + pidThr + pidPitch - pidRoll - pidYaw, PWM_OUT_MIN, PWM_OUT_MAX);
+
+    // //如果机体处于停止模式或倾斜角大于65度，则停止飞行
+    // if (flyMode == STOP || angle.pitch >= 65 || angle.pitch <= -65 || angle.roll >= 65 || angle.roll <= -65) {
+    //     motor1 = PWM_OUT_MIN;
+    //     motor2 = PWM_OUT_MIN;
+    //     motor3 = PWM_OUT_MIN;
+    //     motor4 = PWM_OUT_MIN;
+    // }
 }
 
 /******************************************************************************
@@ -238,7 +253,7 @@ void Motor_Exp_Calc(void)
     //    expRoll = (PWMInCh4 - 1500)*0.1f;
 
     //转化为期望值
-    expRoll = (float)((PWMInCh4 - 1500) * 0.04f); //最大20度
+    expRoll = (float)((PWMInCh4 - 1500) * 0.03f); //最大20度
     expPitch = (float)((PWMInCh2 - 1500) * 0.04f); //最大20度
     //TODO:yaw与roll、pitch不一样
     expYaw = (float)((PWMInCh1 - 1500) * 0.02f); //最大10度每秒
@@ -255,7 +270,7 @@ void PID_Time_Init(void)
 
     // Close TIM4
     TIM_DeInit(TIM4);
-    // TIM4 configuration. Prescaler is 80, period is 0xFFFF, and counter mode is up
+    // TIM4 configuration. Prescaler is 84, period is 0xFFFF, and counter mode is up
     TIM_TimeBaseStructure.TIM_Period = 0xFFFF;
     TIM_TimeBaseStructure.TIM_Prescaler = 80 - 1;
     TIM_TimeBaseStructure.TIM_ClockDivision = 0;

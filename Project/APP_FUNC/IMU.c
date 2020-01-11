@@ -11,6 +11,7 @@ extern float pressure, offsetPress; //温度补偿大气压，零偏大气压
 extern float Temperature; //实际温度
 extern float K_PRESS_TO_HIGH; //气压转换成高度，因为不同地区比例不一样，所以不设成宏
 extern float height, velocity, acceleration_z; //高度（m）,垂直速度(m/s),垂直加速度（m/s^2）
+extern OS_EVENT* IICMutex;
 
 // Fast inverse square-root
 // See: http://en.wikipedia.org/wiki/Fast_inverse_square_root
@@ -139,47 +140,57 @@ void MPU6050_Offset(void)
 }
 
 /******************************************************************************
-函数原型：	void GY86_Read(void)
+函数原型：	void GY86_Read(Type_t type)
 功    能：	读取MPU6050的16位数据
 *******************************************************************************/
-void GY86_Read(void)
+void GY86_Read(Type_t type)
 {
     uint8_t dataBuf[14];
+    INT8U err;
 
-    //mpu6050
-    if (!i2cread(MPU6050_Addr_Real, MPU6050_ACCEL_XOUT_H, 14, dataBuf)) {
-        acc.x = ((((int16_t)dataBuf[0]) << 8) | dataBuf[1]) - offsetAcc.x;
-        acc.y = ((((int16_t)dataBuf[2]) << 8) | dataBuf[3]) - offsetAcc.y;
-        acc.z = ((((int16_t)dataBuf[4]) << 8) | dataBuf[5]) - offsetAcc.z;
-        gyro.x = ((((int16_t)dataBuf[8]) << 8) | dataBuf[9]) - offsetGyro.x;
-        gyro.y = ((((int16_t)dataBuf[10]) << 8) | dataBuf[11]) - offsetGyro.y;
-        gyro.z = ((((int16_t)dataBuf[12]) << 8) | dataBuf[13]) - offsetGyro.z;
+    if (type == ACC_GYRO_MAG) {
 
-        //角速度单位转换，加速度无需转换单位
-        fGyro.x = (float)(gyro.x * RAW_TO_RAD);
-        fGyro.y = (float)(gyro.y * RAW_TO_RAD);
-        fGyro.z = (float)(gyro.z * RAW_TO_RAD);
+        //mpu6050
+        OSMutexPend(IICMutex, 0, &err);
+        if (!i2cread(MPU6050_Addr_Real, MPU6050_ACCEL_XOUT_H, 14, dataBuf)) {
+            OSMutexPost(IICMutex);
+            acc.x = ((((int16_t)dataBuf[0]) << 8) | dataBuf[1]) - offsetAcc.x;
+            acc.y = ((((int16_t)dataBuf[2]) << 8) | dataBuf[3]) - offsetAcc.y;
+            acc.z = ((((int16_t)dataBuf[4]) << 8) | dataBuf[5]) - offsetAcc.z;
+            gyro.x = ((((int16_t)dataBuf[8]) << 8) | dataBuf[9]) - offsetGyro.x;
+            gyro.y = ((((int16_t)dataBuf[10]) << 8) | dataBuf[11]) - offsetGyro.y;
+            gyro.z = ((((int16_t)dataBuf[12]) << 8) | dataBuf[13]) - offsetGyro.z;
+
+            //角速度单位转换，加速度无需转换单位
+            fGyro.x = (float)(gyro.x * RAW_TO_RAD);
+            fGyro.y = (float)(gyro.y * RAW_TO_RAD);
+            fGyro.z = (float)(gyro.z * RAW_TO_RAD);
+        }
+
+        //HMC5883L
+        OSMutexPend(IICMutex, 0, &err);
+        if (!i2cread(HMC5883L_Addr_Real, HMC5883L_XOUT_MSB, 6, dataBuf)) { //必须连续读完这六个数据，否则会导致隔很长一段时间才出新数据
+            OSMutexPost(IICMutex);
+            mag.x = (dataBuf[0] << 8) | dataBuf[1];
+            mag.y = (dataBuf[4] << 8) | dataBuf[5];
+            mag.z = (dataBuf[2] << 8) | dataBuf[3];
+
+            // 读取的原数据为补码形式，这里完成转换
+            if (mag.x > 0x7fff)
+                mag.x -= 0xffff;
+            if (mag.y > 0x7fff)
+                mag.y -= 0xffff;
+            if (mag.z > 0x7fff)
+                mag.z -= 0xffff;
+        }
     }
 
-    //HMC5883L
-    if (!i2cread(HMC5883L_Addr_Real, HMC5883L_XOUT_MSB, 6, dataBuf)) { //必须连续读完这六个数据，否则会导致隔很长一段时间才出新数据
-        mag.x = (dataBuf[0] << 8) | dataBuf[1];
-        mag.y = (dataBuf[4] << 8) | dataBuf[5];
-        mag.z = (dataBuf[2] << 8) | dataBuf[3];
-
-        // 读取的原数据为补码形式，这里完成转换
-        if (mag.x > 0x7fff)
-            mag.x -= 0xffff;
-        if (mag.y > 0x7fff)
-            mag.y -= 0xffff;
-        if (mag.z > 0x7fff)
-            mag.z -= 0xffff;
+    if (type == TEMP_PRESS) {
+        //MS5611
+        MS561101BA_GetTemperature(MS561101BA_D2_OSR_4096); //0x58
+        MS561101BA_GetPressure(MS561101BA_D1_OSR_4096); //0x48
+        //pressure -= offsetPress;
     }
-
-    //MS5611
-    MS561101BA_GetTemperature(MS561101BA_D2_OSR_4096); //0x58
-    MS561101BA_GetPressure(MS561101BA_D1_OSR_4096); //0x48
-    //pressure -= offsetPress;
 
     MPU6050_Offset();
 }
@@ -368,15 +379,15 @@ void Attitude_Update(float gx, float gy, float gz, float ax, float ay, float az,
 //float acc_bias[] = { 0.0f, 0.0f, 0.0f }; // 地理坐标系下加速度偏移量 ,
 //float corr_baro = 0.0f; //m
 
-void Height_Update(/*float ax, float ay, float az, */float pressure)
+void Height_Update(/*float ax, float ay, float az, */ float pressure)
 {
-//    float dT; //采样周期
-//    float accel_bias_corr[3] = { 0.0f, 0.0f, 0.0f };
-//    static float w_z_baro = 0.5f;
-//    static float w_z_acc = 20.0f;
-//    static float w_acc_bias = 0.05f;
-    float baro_height = (pressure - offsetPress) * K_PRESS_TO_HIGH*100; //气压计相对高度cm
-//    vs32 _temp;
+    //    float dT; //采样周期
+    //    float accel_bias_corr[3] = { 0.0f, 0.0f, 0.0f };
+    //    static float w_z_baro = 0.5f;
+    //    static float w_z_acc = 20.0f;
+    //    static float w_acc_bias = 0.05f;
+    float baro_height = (pressure - offsetPress) * K_PRESS_TO_HIGH * 100; //气压计相对高度cm
+    //    vs32 _temp;
 
     height = (height * 7 + baro_height * 3) / 10;
 
